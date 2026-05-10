@@ -29,8 +29,8 @@ Or install as a [Pi package](https://github.com/badlogic/pi-mono#pi-packages).
 
 | Command | Description |
 |---------|-------------|
-| `/ro` | Enable read-only mode |
-| `/ro on` | Enable read-only mode (explicit) |
+| `/ro` | Toggle read-only mode on/off |
+| `/ro on` | Enable read-only mode |
 | `/ro off` | Disable read-only mode, restore normal operation |
 | `/ro status` | Show current mode |
 
@@ -102,6 +102,13 @@ User: /ro off
 
 User: Apply the changes you suggested.
 Assistant: [makes the edits]
+
+User: /ro
+→ [RO] appears in status line
+→ Notification: "Read-only mode ON"
+
+User: Review the changes you just made.
+Assistant: [reads files, discusses findings]
 ```
 
 ## Why KV Cache Matters (Especially for Local Models)

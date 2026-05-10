@@ -6,8 +6,9 @@
  * Write tools (write, edit, bash) are blocked.
  *
  * Usage:
- *   /ro          – enter read-only mode
- *   /ro off      – return to normal mode
+ *   /ro          – toggle read-only mode
+ *   /ro on       – enter read-only mode
+ *   /ro off      – exit read-only mode
  *   /ro status   – show current mode
  *   Alt+R          – toggle RO mode
  */
@@ -78,9 +79,9 @@ export default function (pi: ExtensionAPI) {
                     ctx.ui.notify("Current mode: NORMAL", "info");
                 }
             } else {
-                // "on" or no argument → enter RO mode
+                // No argument → toggle mode
                 if (isReadOnly) {
-                    ctx.ui.notify("Already in read-only mode", "warning");
+                    setRW(ctx);
                 } else {
                     setRO(ctx);
                 }
