@@ -18,6 +18,7 @@ import { Key } from "@mariozechner/pi-tui";
 const WRITE_TOOLS = new Set(["write", "edit", "bash"]);
 
 let isReadOnly = false;
+let pendingNotification: string | null = null;
 
 export default function (pi: ExtensionAPI) {
     function setRO(ctx: { ui: any }) {
@@ -25,11 +26,7 @@ export default function (pi: ExtensionAPI) {
         isReadOnly = true;
         ctx.ui.setStatus("ro", ctx.ui.theme.fg("warning", "[RO]"));
         ctx.ui.notify("Read-only mode ON", "warning");
-        pi.sendMessage({
-            customType: "ro-mode",
-            content: "Read-only mode is now active. The following tools are blocked: write, edit, bash. Do not attempt to use them. You can only read and search. If the user asks for changes, explain what you would do and tell them to use /ro off to disable read-only mode.",
-            display: true,
-        });
+        pendingNotification = "Read-only mode is now active. The following tools are blocked: write, edit, bash. Do not attempt to use them. You can only read and search. If the user asks for changes, explain what you would do and tell them to use /ro off to disable read-only mode.";
     }
 
     function setRW(ctx: { ui: any }) {
@@ -37,12 +34,22 @@ export default function (pi: ExtensionAPI) {
         isReadOnly = false;
         ctx.ui.setStatus("ro", undefined);
         ctx.ui.notify("Normal mode ON", "info");
-        pi.sendMessage({
-            customType: "ro-mode",
-            content: "Read-only mode is now disabled. All tools are available again.",
-            display: true,
-        });
+        pendingNotification = "Read-only mode is now disabled. All tools are available again.";
     }
+
+    // Inject pending mode notification alongside user message
+    pi.on("before_agent_start", async () => {
+        if (!pendingNotification) return;
+        const content = pendingNotification;
+        pendingNotification = null;
+        return {
+            message: {
+                customType: "ro-mode",
+                content,
+                display: true,
+            },
+        };
+    });
 
     // Belt-and-suspenders: block write tools at the event level too
     pi.on("tool_call", async (event, ctx) => {
