@@ -52,8 +52,9 @@ The `tool_call` event handler allows only explicitly whitelisted read-only tools
 - `grep` — text search
 - `find` — file discovery
 - `ls` — directory listing
+- `bash` — only commands that match the read-only allowlist and do not match the denylist
 
-Any attempt by the model to call any other tool is immediately rejected with a descriptive error message. This is the hard enforcement layer — even if the model tries to use a non-allowed tool, it will not execute.
+Bash filtering is intentionally conservative: deny patterns win over allow patterns, and shell control operators / redirection are blocked. Any attempt by the model to call any other tool, or to run a non-allowed bash command, is immediately rejected with a descriptive error message. This is the hard enforcement layer — even if the model tries to use a non-allowed tool, it will not execute.
 
 ### 2. Context Message
 
@@ -72,7 +73,7 @@ The mode state is persisted in the session via `pi.appendEntry()` with the custo
 
 In read-only mode, when the user sends their next message, the model receives an additional context message:
 
-> Read-only mode is now active. Only the following tools are allowed: read, grep, find, ls. Do not attempt to use any other tools. If the user asks for changes, explain what you would do and tell them to use /ro off to disable read-only mode.
+> Read-only mode is now active. Only the following tools are allowed: read, grep, find, ls, bash with read-only commands only. Bash commands must match the read-only allowlist and must not match the denylist. If the user asks for changes, explain what you would do and tell them to use /ro off to disable read-only mode.
 
 When read-only mode is disabled:
 
@@ -92,7 +93,7 @@ User: /ro
 
 User: Can you review the authentication module?
 Assistant: [reads files, discusses findings, suggests changes but does not modify anything]
-→ If the model tries to call any tool outside the whitelist → blocked with error
+→ If the model tries to call any tool outside the whitelist, or a non-allowed bash command → blocked with error
 
 User: Looks good, go ahead and make those changes.
 Assistant: I'm currently in read-only mode. Please use /ro off to disable it.
@@ -130,10 +131,7 @@ The result: switching between read-only and normal mode is essentially free in t
 
 - The mode state is in-memory within the extension. Restarting Pi (new session, not resume) starts in normal mode.
 - Custom tools registered by other extensions are blocked by default in read-only mode. If you need to allow additional read-only tools, add them to the `READ_ONLY_TOOLS` set in `ro-mode.ts`.
-
-## TODO
-
-- [ ] **Smart bash command filter** — optionally add `bash` to the whitelist and inspect its command arguments, allowing read-only commands through while blocking writes. For example, `git diff`, `git log`, `git status`, `ls`, `cat`, `grep`, and similar read-only commands should be permitted, while `git commit`, `git push`, `rm`, `cp`, `mv`, `npm install`, and other mutating commands should be blocked. This would make read-only mode more practical for code review workflows where the agent needs to run inspect commands.
+- Bash filtering is based on regular expressions, not a full shell parser. It is deliberately strict and may block some safe commands. Tune `BASH_ALLOW_PATTERNS` and `BASH_DENY_PATTERNS` in `ro-mode.ts` for your workflow.
 
 ## License
 
