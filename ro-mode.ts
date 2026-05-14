@@ -2,8 +2,8 @@
  * Read-Only Mode Extension
  *
  * Toggle between read-only and normal mode.
- * In RO mode, only read-only tools are available (read, grep, find, ls).
- * Write tools (write, edit, bash) are blocked.
+ * In RO mode, only explicitly allowed read-only tools are available (read, grep, find, ls).
+ * All other tools are blocked.
  *
  * Usage:
  *   /ro          – toggle read-only mode
@@ -14,9 +14,9 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Key } from "@mariozechner/pi-tui";
 
-const WRITE_TOOLS = new Set(["write", "edit", "bash"]);
+const READ_ONLY_TOOLS = new Set(["read", "grep", "find", "ls"]);
+const READ_ONLY_TOOLS_LIST = Array.from(READ_ONLY_TOOLS).join(", ");
 
 let isReadOnly = false;
 let pendingNotification: string | null = null;
@@ -27,7 +27,7 @@ export default function (pi: ExtensionAPI) {
         isReadOnly = true;
         ctx.ui.setStatus("ro", ctx.ui.theme.fg("warning", "[RO]"));
         ctx.ui.notify("Read-only mode ON", "warning");
-        pendingNotification = "Read-only mode is now active. The following tools are blocked: write, edit, bash. Do not attempt to use them. You can only read and search. If the user asks for changes, explain what you would do and tell them to use /ro off to disable read-only mode.";
+        pendingNotification = `Read-only mode is now active. Only the following tools are allowed: ${READ_ONLY_TOOLS_LIST}. Do not attempt to use any other tools. If the user asks for changes, explain what you would do and tell them to use /ro off to disable read-only mode.`;
     }
 
     function setRW(ctx: { ui: any }) {
@@ -52,13 +52,13 @@ export default function (pi: ExtensionAPI) {
         };
     });
 
-    // Belt-and-suspenders: block write tools at the event level too
-    pi.on("tool_call", async (event, ctx) => {
+    // Belt-and-suspenders: allow only explicitly whitelisted read-only tools at the event level too
+    pi.on("tool_call", async (event) => {
         if (!isReadOnly) return undefined;
-        if (WRITE_TOOLS.has(event.toolName)) {
+        if (!READ_ONLY_TOOLS.has(event.toolName)) {
             return {
                 block: true,
-                reason: `Tool "${event.toolName}" is blocked in read-only mode. Use /ro off to disable.`,
+                reason: `Tool "${event.toolName}" is not allowed in read-only mode. Allowed tools: ${READ_ONLY_TOOLS_LIST}. Use /ro off to disable.`,
             };
         }
         return undefined;
@@ -72,9 +72,11 @@ export default function (pi: ExtensionAPI) {
 
             if (arg === "off" || arg === "no" || arg === "disable") {
                 setRW(ctx);
+            } else if (arg === "on" || arg === "yes" || arg === "enable") {
+                setRO(ctx);
             } else if (arg === "status") {
                 if (isReadOnly) {
-                    ctx.ui.notify("Current mode: [RO]", "warning");
+                    ctx.ui.notify("Current mode: READ-ONLY", "warning");
                 } else {
                     ctx.ui.notify("Current mode: NORMAL", "info");
                 }
