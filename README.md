@@ -28,7 +28,7 @@ pi install git:github.com/punzik/pi-ro-mode
 
 ### Manual extension install
 
-Copy both files from `extensions/` into one of Pi's auto-discovered extension locations. The config file must sit next to the extension entry point.
+Copy both files from `extensions/` into one of Pi's auto-discovered extension locations. The packaged default config file should sit next to the extension entry point.
 
 | Location | Scope |
 |----------|-------|
@@ -39,13 +39,21 @@ Copy both files from `extensions/` into one of Pi's auto-discovered extension lo
 
 ## Configuration
 
-Edit `extensions/ro-mode.config.json` to customize the packaged default policy:
+The extension looks for config in this order:
+
+| Path | Scope |
+|------|-------|
+| `<project>/.pi/ro-mode.config.json` | Project-local |
+| `~/.pi/agent/ro-mode.config.json` | Global (all projects) |
+| `extensions/ro-mode.config.json` | Packaged defaults, next to the shipped extension file |
+
+Edit `~/.pi/agent/ro-mode.config.json` or `<project>/.pi/ro-mode.config.json` to customize the policy:
 
 - `readOnlyTools` — tools that are always allowed in read-only mode.
 - `bash.allowPatterns` — regular expressions for bash commands that may run.
 - `bash.denyPatterns` — regular expressions for bash commands that are always blocked. Deny patterns take priority over allow patterns.
 
-After changing the config, reload Pi extensions with `/reload` or restart Pi. For installed git packages, customize by forking the package or installing a local checkout.
+After changing the config, reload Pi extensions with `/reload` or restart Pi.
 
 ## Usage
 

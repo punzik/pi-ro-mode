@@ -14,10 +14,10 @@
  *   Alt+R          – toggle RO mode
  */
 
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isToolCallEventType, type ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { getAgentDir, isToolCallEventType, type ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 type RoModeConfig = {
     readOnlyTools: string[];
@@ -28,7 +28,22 @@ type RoModeConfig = {
 };
 
 const extensionDir = dirname(fileURLToPath(import.meta.url));
-const configPath = join(extensionDir, "ro-mode.config.json");
+const packagedDefaultConfigPath = join(extensionDir, "ro-mode.config.json");
+const globalConfigPath = join(getAgentDir(), "ro-mode.config.json");
+const projectConfigPath = resolve(process.cwd(), ".pi", "ro-mode.config.json");
+
+function resolveConfigPath(): string {
+    const configPaths = [projectConfigPath, globalConfigPath, packagedDefaultConfigPath];
+    const configPath = configPaths.find((path) => existsSync(path));
+
+    if (!configPath) {
+        throw new Error(`ro-mode config not found. Checked: ${configPaths.join(", ")}`);
+    }
+
+    return configPath;
+}
+
+const configPath = resolveConfigPath();
 const roConfig = JSON.parse(readFileSync(configPath, "utf8")) as RoModeConfig;
 
 const READ_ONLY_TOOLS = new Set(roConfig.readOnlyTools);
