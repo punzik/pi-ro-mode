@@ -2,8 +2,8 @@
  * Read-Only Mode Extension
  *
  * Toggle between read-only and normal mode.
- * In RO mode, only explicitly allowed read-only tools are available (read, grep, find, ls).
- * Bash is allowed only for commands that match the read-only allowlist and do not match the denylist.
+ * In RO mode, only tools listed in ro-mode.config.json are always allowed.
+ * Bash is allowed only for commands that match the configured allowlist and do not match the denylist.
  * All other tools are blocked.
  *
  * Usage:
@@ -14,34 +14,29 @@
  *   Alt+R          – toggle RO mode
  */
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { isToolCallEventType, type ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
-const READ_ONLY_TOOLS = new Set(["read", "grep", "find", "ls"]);
+type RoModeConfig = {
+    readOnlyTools: string[];
+    bash: {
+        allowPatterns: string[];
+        denyPatterns: string[];
+    };
+};
+
+const extensionDir = dirname(fileURLToPath(import.meta.url));
+const configPath = join(extensionDir, "ro-mode.config.json");
+const roConfig = JSON.parse(readFileSync(configPath, "utf8")) as RoModeConfig;
+
+const READ_ONLY_TOOLS = new Set(roConfig.readOnlyTools);
 const READ_ONLY_TOOLS_LIST = Array.from(READ_ONLY_TOOLS).join(", ");
 const READ_ONLY_POLICY_DESCRIPTION = `${READ_ONLY_TOOLS_LIST}, bash with read-only commands only`;
 
-const BASH_ALLOW_PATTERNS: RegExp[] = [
-    /^\s*pwd\s*$/,
-    /^\s*(?:ls|grep|rg|cat|head|tail|wc|du|tree|file|stat)\b[\s\S]*$/,
-    /^\s*find\b[\s\S]*$/,
-    /^\s*git(?:\s+(?:-C\s+\S+|--no-pager|-c\s+\S+))*\s+(?:status|diff|log|show|ls-files|grep|rev-parse|describe|blame)\b[\s\S]*$/,
-    /^\s*git(?:\s+(?:-C\s+\S+|--no-pager|-c\s+\S+))*\s+branch(?:\s+(?:--show-current|--all|--remotes|--contains|--merged|--no-merged|--list|-a|-r|-v|-vv))*\s*$/,
-    /^\s*git(?:\s+(?:-C\s+\S+|--no-pager|-c\s+\S+))*\s+remote(?:\s+(?:-v|--verbose|show(?:\s+\S+)?))?\s*$/,
-];
-
-const BASH_DENY_PATTERNS: RegExp[] = [
-    /(?:^|[^\\])(?:>>?|<<?)/,
-    /[;&|`]/,
-    /\$\s*\(/,
-    /\b(?:rm|mv|cp|touch|mkdir|rmdir|truncate|dd|install|chmod|chown|ln|unlink|tee|xargs|rsync|scp|ssh|curl|wget|make|ninja|cmake)\b/,
-    /\b(?:sh|bash|zsh|fish|python|python3|node|ruby|perl)\b/,
-    /\b(?:sed|awk)\b[\s\S]*\b(?:-i|system\s*\()/,
-    /\bfind\b[\s\S]*\s-(?:delete|exec|execdir|ok|okdir)\b/,
-    /\bgit\b[\s\S]*\b(?:add|commit|push|pull|reset|checkout|switch|merge|rebase|tag|stash|clean|apply|restore|rm|mv)\b/,
-    /\bgit\b[\s\S]*\s--(?:output|ext-diff)\b/,
-    /\b(?:npm|pnpm|yarn|bun)\s+(?:install|add|remove|update|upgrade|ci|run|exec|dlx|create|init)\b/,
-    /\b(?:cargo|go|pip|pipx|uv|poetry|gem|bundle)\s+(?:install|add|remove|update|upgrade|run|build|test|publish)\b/,
-];
+const BASH_ALLOW_PATTERNS = roConfig.bash.allowPatterns.map((pattern) => new RegExp(pattern));
+const BASH_DENY_PATTERNS = roConfig.bash.denyPatterns.map((pattern) => new RegExp(pattern));
 
 function isReadOnlyBashCommand(command: string): boolean {
     const allowed = BASH_ALLOW_PATTERNS.some((pattern) => pattern.test(command));

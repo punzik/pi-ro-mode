@@ -6,22 +6,32 @@ Useful when you want to discuss code, review changes, or explore the codebase wi
 
 ## Installation
 
-Place `ro-mode.ts` in one of the auto-discovered extension directories:
+Place both `ro-mode.ts` and `ro-mode.config.json` in one of the auto-discovered extension locations. The config file must sit next to the extension entry point.
 
 | Location | Scope |
 |----------|-------|
-| `~/.pi/agent/extensions/ro-mode.ts` | Global (all projects) |
-| `~/.pi/agent/extensions/ro-mode/index.ts` | Global (subdirectory) |
-| `.pi/extensions/ro-mode.ts` | Project-local |
-| `.pi/extensions/ro-mode/index.ts` | Project-local (subdirectory) |
+| `~/.pi/agent/extensions/ro-mode.ts` + `~/.pi/agent/extensions/ro-mode.config.json` | Global (all projects) |
+| `~/.pi/agent/extensions/ro-mode/index.ts` + `~/.pi/agent/extensions/ro-mode/ro-mode.config.json` | Global (subdirectory) |
+| `.pi/extensions/ro-mode.ts` + `.pi/extensions/ro-mode.config.json` | Project-local |
+| `.pi/extensions/ro-mode/index.ts` + `.pi/extensions/ro-mode/ro-mode.config.json` | Project-local (subdirectory) |
 
-Alternatively, load it directly with the CLI:
+Alternatively, load it directly with the CLI from a directory containing both files:
 
 ```bash
 pi -e /path/to/ro-mode.ts
 ```
 
 Or install as a [Pi package](https://github.com/badlogic/pi-mono#pi-packages).
+
+## Configuration
+
+Edit `ro-mode.config.json` to customize the policy:
+
+- `readOnlyTools` — tools that are always allowed in read-only mode.
+- `bash.allowPatterns` — regular expressions for bash commands that may run.
+- `bash.denyPatterns` — regular expressions for bash commands that are always blocked. Deny patterns take priority over allow patterns.
+
+After changing the config, reload Pi extensions with `/reload` or restart Pi.
 
 ## Usage
 
@@ -130,8 +140,8 @@ The result: switching between read-only and normal mode is essentially free in t
 ## Limitations
 
 - The mode state is in-memory within the extension. Restarting Pi (new session, not resume) starts in normal mode.
-- Custom tools registered by other extensions are blocked by default in read-only mode. If you need to allow additional read-only tools, add them to the `READ_ONLY_TOOLS` set in `ro-mode.ts`.
-- Bash filtering is based on regular expressions, not a full shell parser. It is deliberately strict and may block some safe commands. Tune `BASH_ALLOW_PATTERNS` and `BASH_DENY_PATTERNS` in `ro-mode.ts` for your workflow.
+- Custom tools registered by other extensions are blocked by default in read-only mode. If you need to allow additional read-only tools, add them to `readOnlyTools` in `ro-mode.config.json`.
+- Bash filtering is based on regular expressions, not a full shell parser. It is deliberately strict and may block some safe commands. Tune `bash.allowPatterns` and `bash.denyPatterns` in `ro-mode.config.json` for your workflow.
 
 ## License
 
