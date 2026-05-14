@@ -6,7 +6,30 @@ Useful when you want to discuss code, review changes, or explore the codebase wi
 
 ## Installation
 
-Place both `ro-mode.ts` and `ro-mode.config.json` in one of the auto-discovered extension locations. The config file must sit next to the extension entry point.
+### As a Pi package
+
+From a local checkout:
+
+```bash
+pi install /path/to/pi-ro-mode
+```
+
+For one-off testing without installing:
+
+```bash
+pi -e /path/to/pi-ro-mode
+```
+
+When published, it can also be installed from npm or git:
+
+```bash
+pi install npm:pi-ro-mode
+pi install git:github.com/punzik/pi-ro-mode
+```
+
+### Manual extension install
+
+Copy both files from `extensions/` into one of Pi's auto-discovered extension locations. The config file must sit next to the extension entry point.
 
 | Location | Scope |
 |----------|-------|
@@ -15,23 +38,15 @@ Place both `ro-mode.ts` and `ro-mode.config.json` in one of the auto-discovered 
 | `.pi/extensions/ro-mode.ts` + `.pi/extensions/ro-mode.config.json` | Project-local |
 | `.pi/extensions/ro-mode/index.ts` + `.pi/extensions/ro-mode/ro-mode.config.json` | Project-local (subdirectory) |
 
-Alternatively, load it directly with the CLI from a directory containing both files:
-
-```bash
-pi -e /path/to/ro-mode.ts
-```
-
-Or install as a [Pi package](https://github.com/badlogic/pi-mono#pi-packages).
-
 ## Configuration
 
-Edit `ro-mode.config.json` to customize the policy:
+Edit `extensions/ro-mode.config.json` to customize the packaged default policy:
 
 - `readOnlyTools` — tools that are always allowed in read-only mode.
 - `bash.allowPatterns` — regular expressions for bash commands that may run.
 - `bash.denyPatterns` — regular expressions for bash commands that are always blocked. Deny patterns take priority over allow patterns.
 
-After changing the config, reload Pi extensions with `/reload` or restart Pi.
+After changing the config, reload Pi extensions with `/reload` or restart Pi. For installed npm/git packages, customize by forking the package or installing a local checkout.
 
 ## Usage
 
@@ -145,4 +160,4 @@ The result: switching between read-only and normal mode is essentially free in t
 
 ## License
 
-MIT
+GPL-3.0-only

@@ -1,0 +1,32 @@
+{
+  "name": "pi-ro-mode",
+  "version": "0.1.0",
+  "description": "Pi extension that adds a toggleable read-only mode with configurable tool and bash command allowlists.",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/punzik/pi-ro-mode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/punzik/pi-ro-mode/issues"
+  },
+  "homepage": "https://github.com/punzik/pi-ro-mode#readme",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "read-only",
+  ],
+  "files": [
+    "extensions",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/ro-mode.ts"
+    ]
+  }
+}
