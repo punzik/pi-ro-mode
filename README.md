@@ -20,10 +20,9 @@ For one-off testing without installing:
 pi -e /path/to/pi-ro-mode
 ```
 
-When published, it can also be installed from npm or git:
+Install directly from GitHub:
 
 ```bash
-pi install npm:pi-ro-mode
 pi install git:github.com/punzik/pi-ro-mode
 ```
 
@@ -46,7 +45,7 @@ Edit `extensions/ro-mode.config.json` to customize the packaged default policy:
 - `bash.allowPatterns` — regular expressions for bash commands that may run.
 - `bash.denyPatterns` — regular expressions for bash commands that are always blocked. Deny patterns take priority over allow patterns.
 
-After changing the config, reload Pi extensions with `/reload` or restart Pi. For installed npm/git packages, customize by forking the package or installing a local checkout.
+After changing the config, reload Pi extensions with `/reload` or restart Pi. For installed git packages, customize by forking the package or installing a local checkout.
 
 ## Usage
 
