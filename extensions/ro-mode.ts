@@ -43,6 +43,7 @@ type RoState = {
 type SetModeOptions = {
   notify?: boolean;
   queueContextMessage?: boolean;
+  persist?: boolean;
 };
 
 const EXTENSION_DIR = dirname(fileURLToPath(import.meta.url));
@@ -282,10 +283,15 @@ export default function (pi: ExtensionAPI) {
   function setReadOnlyMode(ctx: ExtensionContext, active: boolean, options: SetModeOptions = {}): void {
     const notify = options.notify ?? true;
     const queueContextMessage = options.queueContextMessage ?? true;
+    const persist = options.persist ?? true;
     const changed = isReadOnly !== active;
 
     isReadOnly = active;
     updateStatus(ctx);
+
+    if (changed && persist) {
+      pi.appendEntry<RoState>(RO_STATE_CUSTOM_TYPE, { active: isReadOnly });
+    }
 
     if (changed && queueContextMessage) {
       queueModeNotification();
@@ -343,8 +349,13 @@ export default function (pi: ExtensionAPI) {
     appendConfiguredToolsOnStart();
 
     const state = getLastRoState(ctx.sessionManager.getEntries());
-    const startReadOnly = isRoModeEnabledByEnv() || state?.active === true;
-    setReadOnlyMode(ctx, startReadOnly, { notify: startReadOnly, queueContextMessage: startReadOnly });
+    const envReadOnly = isRoModeEnabledByEnv();
+    const startReadOnly = envReadOnly || state?.active === true;
+    setReadOnlyMode(ctx, startReadOnly, {
+      notify: startReadOnly,
+      queueContextMessage: startReadOnly,
+      persist: envReadOnly,
+    });
   });
 
   pi.on("turn_start", async () => {
