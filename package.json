@@ -5,19 +5,21 @@
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/punzik/pi-ro-mode.git"
+    "url": "git+https://github.com/punzik/pi-ro-mode.git"
   },
+  "homepage": "https://github.com/punzik/pi-ro-mode#readme",
   "bugs": {
     "url": "https://github.com/punzik/pi-ro-mode/issues"
   },
-  "homepage": "https://github.com/punzik/pi-ro-mode#readme",
   "keywords": [
     "pi-package",
     "pi-extension",
-    "read-only"
+    "read-only",
+    "readonly",
+    "tool-policy"
   ],
   "files": [
-    "extensions",
+    "extensions/",
     "README.md",
     "LICENSE"
   ],
