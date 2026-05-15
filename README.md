@@ -29,15 +29,15 @@ For one session, pass the full tool list on the command line:
 pi --tools read,bash,edit,write,grep,find,ls
 ```
 
-To make this the default for this extension, set `activateToolsOnStart` in `ro-mode.config.json`:
+To make this the default for this extension, set `appendToolsOnStart` in `ro-mode.config.json`:
 
 ```json
 {
-  "activateToolsOnStart": ["read", "bash", "edit", "write", "grep", "find", "ls"]
+  "appendToolsOnStart": ["grep", "find", "ls"]
 }
 ```
 
-The packaged default is an empty list, so installing the extension does not change Pi's default active tools unless you opt in.
+The packaged default is an empty list, so installing the extension does not change Pi's default active tools unless you opt in. `appendToolsOnStart` preserves existing active tools and may only add Pi's dedicated read-only inspection tools: `grep`, `find`, and `ls`.
 
 You can also use an environment variable plus a shell wrapper in `~/.bashrc`, `~/.zshrc`, or similar:
 
@@ -100,7 +100,7 @@ Project-local settings override global settings. Global settings override packag
 | Field | Type | Description |
 |-------|------|-------------|
 | `readOnlyTools` | `string[]` | Tool names allowed in read-only mode. |
-| `activateToolsOnStart` | `string[]` | Tool names to activate at Pi session start. Existing active tools are preserved. Defaults to `[]`. |
+| `appendToolsOnStart` | `string[]` | Read-only inspection tool names to append to Pi's active tools at session start. Only `grep`, `find`, and `ls` are accepted. Defaults to `[]`. |
 | `bash.allowPatterns` | `string[]` | Regular expressions for bash commands that may run. |
 | `bash.denyPatterns` | `string[]` | Regular expressions for bash commands that are always blocked. Deny patterns win. |
 
@@ -109,7 +109,7 @@ Example:
 ```json
 {
   "readOnlyTools": ["read", "grep", "find", "ls"],
-  "activateToolsOnStart": ["read", "bash", "edit", "write", "grep", "find", "ls"],
+  "appendToolsOnStart": ["grep", "find", "ls"],
   "bash": {
     "allowPatterns": ["^\\s*pwd\\s*$", "^\\s*git\\s+status\\b[\\s\\S]*$"],
     "denyPatterns": ["[;&|`]", "(?:^|[^\\\\])(?:>>?|<<?)"]
@@ -144,7 +144,7 @@ The mode is also persisted in resumed sessions.
 
 ## How it works
 
-The extension listens for tool calls and blocks disallowed tools while read-only mode is active. It keeps the normal Pi tool list unchanged and only enforces policy at execution time.
+The extension listens for tool calls and blocks disallowed tools while read-only mode is active. It keeps the normal Pi tool list unchanged, except for optional startup appends from `appendToolsOnStart`, and enforces policy at execution time.
 
 Mode changes are queued as a context message for the next user prompt:
 

@@ -20,7 +20,7 @@ import {
 
 type RoModeConfig = {
   readOnlyTools: string[];
-  activateToolsOnStart: string[];
+  appendToolsOnStart: string[];
   bash: {
     allowPatterns: string[];
     denyPatterns: string[];
@@ -29,7 +29,7 @@ type RoModeConfig = {
 
 type PartialRoModeConfig = {
   readOnlyTools?: string[];
-  activateToolsOnStart?: string[];
+  appendToolsOnStart?: string[];
   bash?: {
     allowPatterns?: string[];
     denyPatterns?: string[];
@@ -54,10 +54,11 @@ const RO_MODE_ENV_VAR = "PI_RO_MODE";
 const TRUE_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
 const COMMAND_ARGUMENTS = ["on", "off", "status"];
 const RO_STATE_CUSTOM_TYPE = "ro-state";
+const APPENDABLE_START_TOOLS = new Set(["find", "grep", "ls"]);
 
 const BUILTIN_DEFAULT_CONFIG: RoModeConfig = {
   readOnlyTools: ["read", "grep", "find", "ls"],
-  activateToolsOnStart: [],
+  appendToolsOnStart: [],
   bash: {
     allowPatterns: [
       "^\\s*pwd\\s*$",
@@ -132,11 +133,11 @@ function validateConfig(raw: unknown, configPath: string): PartialRoModeConfig {
     }
   }
 
-  if (hasOwn(raw, "activateToolsOnStart")) {
-    if (isStringArray(raw.activateToolsOnStart)) {
-      config.activateToolsOnStart = raw.activateToolsOnStart;
+  if (hasOwn(raw, "appendToolsOnStart")) {
+    if (isStringArray(raw.appendToolsOnStart)) {
+      config.appendToolsOnStart = raw.appendToolsOnStart;
     } else {
-      console.error(`pi-ro-mode: ignoring invalid activateToolsOnStart in ${configPath}: expected string[]`);
+      console.error(`pi-ro-mode: ignoring invalid appendToolsOnStart in ${configPath}: expected string[]`);
     }
   }
 
@@ -172,7 +173,7 @@ function validateConfig(raw: unknown, configPath: string): PartialRoModeConfig {
 function mergeConfig(base: RoModeConfig, override: PartialRoModeConfig): RoModeConfig {
   return {
     readOnlyTools: override.readOnlyTools ?? base.readOnlyTools,
-    activateToolsOnStart: override.activateToolsOnStart ?? base.activateToolsOnStart,
+    appendToolsOnStart: override.appendToolsOnStart ?? base.appendToolsOnStart,
     bash: {
       allowPatterns: override.bash?.allowPatterns ?? base.bash.allowPatterns,
       denyPatterns: override.bash?.denyPatterns ?? base.bash.denyPatterns,
@@ -183,7 +184,7 @@ function mergeConfig(base: RoModeConfig, override: PartialRoModeConfig): RoModeC
 function cloneConfig(config: RoModeConfig): RoModeConfig {
   return {
     readOnlyTools: [...config.readOnlyTools],
-    activateToolsOnStart: [...config.activateToolsOnStart],
+    appendToolsOnStart: [...config.appendToolsOnStart],
     bash: {
       allowPatterns: [...config.bash.allowPatterns],
       denyPatterns: [...config.bash.denyPatterns],
@@ -294,16 +295,22 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
-  function activateConfiguredToolsOnStart(): void {
-    if (RO_CONFIG.activateToolsOnStart.length === 0) return;
+  function appendConfiguredToolsOnStart(): void {
+    if (RO_CONFIG.appendToolsOnStart.length === 0) return;
 
     const availableTools = new Set(pi.getAllTools().map((tool) => tool.name));
     const activeTools = pi.getActiveTools();
     const nextTools = [...activeTools];
     const nextToolSet = new Set(nextTools);
     const unknownTools: string[] = [];
+    const disallowedTools: string[] = [];
 
-    for (const toolName of RO_CONFIG.activateToolsOnStart) {
+    for (const toolName of RO_CONFIG.appendToolsOnStart) {
+      if (!APPENDABLE_START_TOOLS.has(toolName)) {
+        disallowedTools.push(toolName);
+        continue;
+      }
+
       if (!availableTools.has(toolName)) {
         unknownTools.push(toolName);
         continue;
@@ -316,7 +323,13 @@ export default function (pi: ExtensionAPI) {
     }
 
     if (unknownTools.length > 0) {
-      console.error(`pi-ro-mode: activateToolsOnStart contains unknown tools: ${unknownTools.join(", ")}`);
+      console.error(`pi-ro-mode: appendToolsOnStart contains unknown tools: ${unknownTools.join(", ")}`);
+    }
+
+    if (disallowedTools.length > 0) {
+      console.error(
+        `pi-ro-mode: appendToolsOnStart may only contain ${[...APPENDABLE_START_TOOLS].join(", ")}; ignored: ${disallowedTools.join(", ")}`,
+      );
     }
 
     if (nextTools.length !== activeTools.length) {
@@ -326,7 +339,7 @@ export default function (pi: ExtensionAPI) {
 
   // Session lifecycle.
   pi.on("session_start", async (_event, ctx) => {
-    activateConfiguredToolsOnStart();
+    appendConfiguredToolsOnStart();
 
     const state = getLastRoState(ctx.sessionManager.getEntries());
     const startReadOnly = isRoModeEnabledByEnv() || state?.active === true;

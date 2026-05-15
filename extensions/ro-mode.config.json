@@ -1,6 +1,6 @@
 {
   "readOnlyTools": ["read", "grep", "find", "ls"],
-  "activateToolsOnStart": [],
+  "appendToolsOnStart": [],
   "bash": {
     "allowPatterns": [
       "^\\s*pwd\\s*$",
