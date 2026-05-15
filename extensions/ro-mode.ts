@@ -16,7 +16,7 @@ import {
   type ExtensionAPI,
   type ExtensionContext,
   type SessionEntry,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 
 type RoModeConfig = {
   readOnlyTools: string[];
