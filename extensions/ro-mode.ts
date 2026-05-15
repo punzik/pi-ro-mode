@@ -75,7 +75,8 @@ const BUILTIN_DEFAULT_CONFIG: RoModeConfig = {
       "\\b(?:rm|mv|cp|touch|mkdir|rmdir|truncate|dd|install|chmod|chown|ln|unlink|tee|xargs|rsync|scp|ssh|curl|wget|make|ninja|cmake)\\b",
       "\\b(?:sh|bash|zsh|fish|python|python3|node|ruby|perl)\\b",
       "\\b(?:sed|awk)\\b[\\s\\S]*\\b(?:-i|system\\s*\\()",
-      "\\bfind\\b[\\s\\S]*\\s-(?:delete|exec|execdir|ok|okdir)\\b",
+      "\\bfind\\b[\\s\\S]*\\s-(?:delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)\\b",
+      "\\btree\\b[\\s\\S]*\\s(?:-o(?:\\s|=|\\S)|--output(?:\\s|=))",
       "\\bgit\\b[\\s\\S]*\\b(?:add|commit|push|pull|reset|checkout|switch|merge|rebase|tag|stash|clean|apply|restore|rm|mv)\\b",
       "\\bgit\\b[\\s\\S]*\\s--(?:output|ext-diff)\\b",
       "\\b(?:npm|pnpm|yarn|bun)\\s+(?:install|add|remove|update|upgrade|ci|run|exec|dlx|create|init)\\b",
@@ -407,8 +408,6 @@ export default function (pi: ExtensionAPI) {
   pi.on("tool_call", async (event) => {
     if (!isReadOnly) return undefined;
 
-    if (READ_ONLY_TOOLS.has(event.toolName)) return undefined;
-
     if (isToolCallEventType("bash", event)) {
       const command = event.input.command;
       if (isReadOnlyBashCommand(command)) return undefined;
@@ -418,6 +417,8 @@ export default function (pi: ExtensionAPI) {
         reason: `Bash command is not allowed in read-only mode: ${command}. Allowed bash commands must match the read-only allowlist and must not match the denylist. Use /ro off to disable.`,
       };
     }
+
+    if (READ_ONLY_TOOLS.has(event.toolName)) return undefined;
 
     return {
       block: true,
