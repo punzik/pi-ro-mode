@@ -13,11 +13,11 @@ The extension does not change the system prompt when the mode changes. It inject
 When read-only mode is active:
 
 - the footer shows `[RO]`;
-- only configured read-only tools are allowed;
-- `bash` is allowed only for commands that match the configured allowlist and do not match the denylist;
+- only configured read-only agent tools are allowed;
+- agent `bash` tool calls are allowed only for commands that match the configured allowlist and do not match the denylist;
 - blocked tool calls fail with a message that explains how to disable read-only mode.
 
-By default, the allowed tools are `read`, `grep`, `find`, and `ls`. Bash commands are restricted to read-only inspection commands such as `pwd`, `ls`, `rg`, `cat`, `find`, and selected read-only `git` commands.
+By default, the allowed tools are `read`, `grep`, `find`, and `ls`. Agent bash commands are restricted to read-only inspection commands such as `pwd`, `ls`, `rg`, `cat`, `find`, and selected read-only `git` commands.
 
 ## Recommended Pi tool setup
 
@@ -99,10 +99,10 @@ Project-local settings override global settings. Global settings override packag
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `readOnlyTools` | `string[]` | Tool names allowed in read-only mode. |
+| `readOnlyTools` | `string[]` | Agent tool names allowed in read-only mode. |
 | `appendToolsOnStart` | `string[]` | Read-only inspection tool names to append to Pi's active tools at session start. Only `grep`, `find`, and `ls` are accepted. Defaults to `[]`. |
-| `bash.allowPatterns` | `string[]` | Regular expressions for bash commands that may run. |
-| `bash.denyPatterns` | `string[]` | Regular expressions for bash commands that are always blocked. Deny patterns win. |
+| `bash.allowPatterns` | `string[]` | Regular expressions for agent bash commands that may run. |
+| `bash.denyPatterns` | `string[]` | Regular expressions for agent bash commands that are always blocked. Deny patterns win. |
 
 Example:
 
@@ -144,7 +144,7 @@ The mode is also persisted in resumed sessions.
 
 ## How it works
 
-The extension listens for tool calls and blocks disallowed tools while read-only mode is active. It keeps the normal Pi tool list unchanged, except for optional startup appends from `appendToolsOnStart`, and enforces policy at execution time.
+The extension listens for agent tool calls and blocks disallowed tools while read-only mode is active. It keeps the normal Pi tool list unchanged, except for optional startup appends from `appendToolsOnStart`, and enforces policy at execution time.
 
 Mode changes are queued as a context message for the next user prompt:
 
@@ -156,8 +156,10 @@ Session state is persisted with a custom `ro-state` session entry.
 ## Limitations
 
 - Without `PI_RO_MODE`, a new session starts in normal mode.
+- The mode limits agent tool calls only. User-entered shell commands through Pi's `!` / `!!` bash shortcuts are not intercepted by this extension.
 - Custom tools from other extensions are blocked by default unless listed in `readOnlyTools`.
 - Bash filtering uses regular expressions, not a full shell parser. It is intentionally conservative and may block safe commands.
+- This extension is a guardrail for agent behavior, not a sandbox or security boundary.
 
 ## Package layout
 
