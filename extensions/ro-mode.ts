@@ -12,6 +12,7 @@
  *   /ro off      – exit read-only mode
  *   /ro status   – show current mode
  *   Alt+R          – toggle RO mode
+ *   PI_RO_MODE=1   – start the agent in RO mode
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -52,6 +53,15 @@ const READ_ONLY_POLICY_DESCRIPTION = `${READ_ONLY_TOOLS_LIST}, bash with read-on
 
 const BASH_ALLOW_PATTERNS = roConfig.bash.allowPatterns.map((pattern) => new RegExp(pattern));
 const BASH_DENY_PATTERNS = roConfig.bash.denyPatterns.map((pattern) => new RegExp(pattern));
+
+const RO_MODE_ENV_VAR = "PI_RO_MODE";
+const TRUE_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
+
+function isRoModeEnabledByEnv(): boolean {
+    const value = process.env[RO_MODE_ENV_VAR];
+    if (!value) return false;
+    return TRUE_ENV_VALUES.has(value.trim().toLowerCase());
+}
 
 function isReadOnlyBashCommand(command: string): boolean {
     const allowed = BASH_ALLOW_PATTERNS.some((pattern) => pattern.test(command));
@@ -154,14 +164,14 @@ export default function (pi: ExtensionAPI) {
         },
     });
 
-    // Restore state from session
+    // Enable on startup via PI_RO_MODE or restore state from session
     pi.on("session_start", async (_event, ctx) => {
         const entries = ctx.sessionManager.getEntries();
         const last = entries
             .filter((e: any) => e.type === "custom" && e.customType === "ro-state")
             .pop() as any;
 
-        if (last?.data?.active) {
+        if (isRoModeEnabledByEnv() || last?.data?.active) {
             isReadOnly = false; // reset so setRO actually runs
             setRO(ctx);
         }

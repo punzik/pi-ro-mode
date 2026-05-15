@@ -72,6 +72,14 @@ After changing the config, reload Pi extensions with `/reload` or restart Pi.
 |----------|--------|
 | `Alt+R` | Toggle read-only mode on/off |
 
+### Start in Read-Only Mode
+
+Set `PI_RO_MODE` to `1`, `true`, `yes`, or `on` to enable read-only mode automatically when the agent starts:
+
+```bash
+PI_RO_MODE=1 pi
+```
+
 ## How It Works
 
 When read-only mode is active, the extension uses three layers of protection:
@@ -161,7 +169,7 @@ The result: switching between read-only and normal mode is essentially free in t
 
 ## Limitations
 
-- The mode state is in-memory within the extension. Restarting Pi (new session, not resume) starts in normal mode.
+- Without `PI_RO_MODE`, restarting Pi (new session, not resume) starts in normal mode.
 - Custom tools registered by other extensions are blocked by default in read-only mode. If you need to allow additional read-only tools, add them to `readOnlyTools` in `ro-mode.config.json`.
 - Bash filtering is based on regular expressions, not a full shell parser. It is deliberately strict and may block some safe commands. Tune `bash.allowPatterns` and `bash.denyPatterns` in `ro-mode.config.json` for your workflow.
 
