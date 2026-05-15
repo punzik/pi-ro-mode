@@ -20,6 +20,7 @@ import {
 
 type RoModeConfig = {
   readOnlyTools: string[];
+  activateToolsOnStart: string[];
   bash: {
     allowPatterns: string[];
     denyPatterns: string[];
@@ -28,6 +29,7 @@ type RoModeConfig = {
 
 type PartialRoModeConfig = {
   readOnlyTools?: string[];
+  activateToolsOnStart?: string[];
   bash?: {
     allowPatterns?: string[];
     denyPatterns?: string[];
@@ -55,6 +57,7 @@ const RO_STATE_CUSTOM_TYPE = "ro-state";
 
 const BUILTIN_DEFAULT_CONFIG: RoModeConfig = {
   readOnlyTools: ["read", "grep", "find", "ls"],
+  activateToolsOnStart: [],
   bash: {
     allowPatterns: [
       "^\\s*pwd\\s*$",
@@ -129,6 +132,14 @@ function validateConfig(raw: unknown, configPath: string): PartialRoModeConfig {
     }
   }
 
+  if (hasOwn(raw, "activateToolsOnStart")) {
+    if (isStringArray(raw.activateToolsOnStart)) {
+      config.activateToolsOnStart = raw.activateToolsOnStart;
+    } else {
+      console.error(`pi-ro-mode: ignoring invalid activateToolsOnStart in ${configPath}: expected string[]`);
+    }
+  }
+
   if (hasOwn(raw, "bash")) {
     if (isRecord(raw.bash)) {
       const bashConfig: PartialRoModeConfig["bash"] = {};
@@ -161,6 +172,7 @@ function validateConfig(raw: unknown, configPath: string): PartialRoModeConfig {
 function mergeConfig(base: RoModeConfig, override: PartialRoModeConfig): RoModeConfig {
   return {
     readOnlyTools: override.readOnlyTools ?? base.readOnlyTools,
+    activateToolsOnStart: override.activateToolsOnStart ?? base.activateToolsOnStart,
     bash: {
       allowPatterns: override.bash?.allowPatterns ?? base.bash.allowPatterns,
       denyPatterns: override.bash?.denyPatterns ?? base.bash.denyPatterns,
@@ -171,6 +183,7 @@ function mergeConfig(base: RoModeConfig, override: PartialRoModeConfig): RoModeC
 function cloneConfig(config: RoModeConfig): RoModeConfig {
   return {
     readOnlyTools: [...config.readOnlyTools],
+    activateToolsOnStart: [...config.activateToolsOnStart],
     bash: {
       allowPatterns: [...config.bash.allowPatterns],
       denyPatterns: [...config.bash.denyPatterns],
@@ -281,8 +294,40 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
+  function activateConfiguredToolsOnStart(): void {
+    if (RO_CONFIG.activateToolsOnStart.length === 0) return;
+
+    const availableTools = new Set(pi.getAllTools().map((tool) => tool.name));
+    const activeTools = pi.getActiveTools();
+    const nextTools = [...activeTools];
+    const nextToolSet = new Set(nextTools);
+    const unknownTools: string[] = [];
+
+    for (const toolName of RO_CONFIG.activateToolsOnStart) {
+      if (!availableTools.has(toolName)) {
+        unknownTools.push(toolName);
+        continue;
+      }
+
+      if (!nextToolSet.has(toolName)) {
+        nextToolSet.add(toolName);
+        nextTools.push(toolName);
+      }
+    }
+
+    if (unknownTools.length > 0) {
+      console.error(`pi-ro-mode: activateToolsOnStart contains unknown tools: ${unknownTools.join(", ")}`);
+    }
+
+    if (nextTools.length !== activeTools.length) {
+      pi.setActiveTools(nextTools);
+    }
+  }
+
   // Session lifecycle.
   pi.on("session_start", async (_event, ctx) => {
+    activateConfiguredToolsOnStart();
+
     const state = getLastRoState(ctx.sessionManager.getEntries());
     const startReadOnly = isRoModeEnabledByEnv() || state?.active === true;
     setReadOnlyMode(ctx, startReadOnly, { notify: startReadOnly, queueContextMessage: startReadOnly });

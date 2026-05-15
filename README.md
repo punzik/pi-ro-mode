@@ -19,6 +19,40 @@ When read-only mode is active:
 
 By default, the allowed tools are `read`, `grep`, `find`, and `ls`. Bash commands are restricted to read-only inspection commands such as `pwd`, `ls`, `rg`, `cat`, `find`, and selected read-only `git` commands.
 
+## Recommended Pi tool setup
+
+Pi enables only `read`, `write`, `edit`, and `bash` by default. Since read-only mode works best with Pi's dedicated read-only inspection tools, it is recommended to also activate `grep`, `find`, and `ls`.
+
+For one session, pass the full tool list on the command line:
+
+```bash
+pi --tools read,bash,edit,write,grep,find,ls
+```
+
+To make this the default for this extension, set `activateToolsOnStart` in `ro-mode.config.json`:
+
+```json
+{
+  "activateToolsOnStart": ["read", "bash", "edit", "write", "grep", "find", "ls"]
+}
+```
+
+The packaged default is an empty list, so installing the extension does not change Pi's default active tools unless you opt in.
+
+You can also use an environment variable plus a shell wrapper in `~/.bashrc`, `~/.zshrc`, or similar:
+
+```bash
+export PI_DEFAULT_TOOLS=read,bash,edit,write,grep,find,ls
+pi() {
+  case "$1" in
+    install|remove|uninstall|update|list|config) command pi "$@" ;;
+    *) command pi --tools "${PI_DEFAULT_TOOLS}" "$@" ;;
+  esac
+}
+```
+
+`PI_RO_MODE=1` can still be used separately to start new sessions with read-only mode already enabled.
+
 ## Installation
 
 ### From git
@@ -66,6 +100,7 @@ Project-local settings override global settings. Global settings override packag
 | Field | Type | Description |
 |-------|------|-------------|
 | `readOnlyTools` | `string[]` | Tool names allowed in read-only mode. |
+| `activateToolsOnStart` | `string[]` | Tool names to activate at Pi session start. Existing active tools are preserved. Defaults to `[]`. |
 | `bash.allowPatterns` | `string[]` | Regular expressions for bash commands that may run. |
 | `bash.denyPatterns` | `string[]` | Regular expressions for bash commands that are always blocked. Deny patterns win. |
 
@@ -74,6 +109,7 @@ Example:
 ```json
 {
   "readOnlyTools": ["read", "grep", "find", "ls"],
+  "activateToolsOnStart": ["read", "bash", "edit", "write", "grep", "find", "ls"],
   "bash": {
     "allowPatterns": ["^\\s*pwd\\s*$", "^\\s*git\\s+status\\b[\\s\\S]*$"],
     "denyPatterns": ["[;&|`]", "(?:^|[^\\\\])(?:>>?|<<?)"]
